@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import api from '../api/axios'
 import MovieCard from '../components/MovieCard'
 import MovieModal from '../components/MovieModal'
+import Toast from '../components/Toast'
 import { useNavigate } from 'react-router-dom'
 
 export default function Home() {
@@ -9,7 +10,10 @@ export default function Home() {
     const [allMovies, setAllMovies] = useState([])
     const [filters, setFilters] = useState({ genre: '', platform: '', status: '' })
     const [selectedMovie, setSelectedMovie] = useState(null)
+    const [confirmDelete, setConfirmDelete] = useState(null)
+    const [toast, setToast] = useState('')
     const navigate = useNavigate()
+
 
     useEffect(() => {
         api.get('/movies/').then(r => setAllMovies(r.data))
@@ -23,6 +27,14 @@ export default function Home() {
         const res = await api.get('/movies/', { params })
         setMovies(res.data)
     }
+
+    const handleDelete = async () => {
+        await api.delete(`/movies/${confirmDelete.id}`)
+        setMovies(ms => ms.filter(m => m.id !== confirmDelete.id))
+        setToast(`"${confirmDelete.title}" removed from collection`)
+        setConfirmDelete(null)
+    }
+
 
     useEffect(() => { fetchMovies() }, [filters])
 
@@ -83,6 +95,7 @@ export default function Home() {
                                    onDelete={id => setMovies(ms => ms.filter(m => m.id !== id))}
                                    onEdit={m => navigate('/add', { state: { movie: m } })}
                                    onOpenModal={m => setSelectedMovie(m)}
+                                   onDeleteConfirm={m => setConfirmDelete(m)}
                         />
                     ))}
                 </div>
@@ -91,6 +104,30 @@ export default function Home() {
             {selectedMovie && (
                 <MovieModal movie={selectedMovie} onClose={() => setSelectedMovie(null)} />
             )}
+
+            {confirmDelete && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+                    <div className="absolute inset-0 bg-black/80 backdrop-blur-sm" onClick={() => setConfirmDelete(null)} />
+                    <div className="relative z-10 bg-[#0e1623] rounded-2xl border border-white/10 p-6 w-full max-w-sm shadow-2xl">
+                        <h3 className="text-xl text-white mb-2" style={{ fontFamily: "'Bebas Neue', sans-serif" }}>Remove Title?</h3>
+                        <p className="text-zinc-400 text-sm mb-6">
+                            Are you sure you want to remove <span className="text-white font-medium">"{confirmDelete.title}"</span> from your collection?
+                        </p>
+                        <div className="flex gap-3">
+                            <button onClick={() => setConfirmDelete(null)}
+                                    className="flex-1 py-2.5 rounded-xl bg-white/5 hover:bg-white/10 text-zinc-300 text-sm transition-colors cursor-pointer">
+                                Cancel
+                            </button>
+                            <button onClick={handleDelete}
+                                    className="flex-1 py-2.5 rounded-xl bg-red-500/20 hover:bg-red-500/30 text-red-400 text-sm transition-colors cursor-pointer">
+                                Yes, Remove
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {toast && <Toast message={toast} onClose={() => setToast('')} />}
         </div>
     )
 }

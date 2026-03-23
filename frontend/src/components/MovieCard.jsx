@@ -6,8 +6,7 @@ const STATUS = {
     wishlist: { label: 'Wishlist', color: 'bg-blue-500/20 text-blue-400 border border-blue-500/30' },
 }
 
-export default function MovieCard({ movie, onDelete, onEdit, onOpenModal }) {
-    const progress = movie.total_episodes > 0
+export default function MovieCard({ movie, onDelete, onEdit, onOpenModal, onDeleteConfirm }) {    const progress = movie.total_episodes > 0
         ? Math.round((movie.episodes_watched / movie.total_episodes) * 100) : null
     const s = STATUS[movie.status] || STATUS.wishlist
 
@@ -59,7 +58,7 @@ export default function MovieCard({ movie, onDelete, onEdit, onOpenModal }) {
                             className="flex-1 text-xs py-2 rounded-lg bg-white/5 hover:bg-white/10 text-zinc-300 transition-colors cursor-pointer">
                         Edit
                     </button>
-                    <button onClick={() => { api.delete(`/movies/${movie.id}`); onDelete(movie.id) }}
+                    <button onClick={() => onDeleteConfirm(movie)}
                             className="flex-1 text-xs py-2 rounded-lg bg-red-500/10 hover:bg-red-500/20 text-red-400 transition-colors cursor-pointer">
                         Remove
                     </button>

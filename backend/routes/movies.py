@@ -57,8 +57,18 @@ def watch_time_stats(db: Session = Depends(get_db)):
     by_genre = {}
     by_platform = {}
     for m in movies:
-        by_genre[m.genre] = by_genre.get(m.genre, 0) + (m.watch_minutes or 0)
-        by_platform[m.platform] = by_platform.get(m.platform, 0) + (m.watch_minutes or 0)
+        if m.genre:
+            for genre in m.genre.split(','):
+                genre = genre.strip()
+                if genre:
+                    by_genre[genre] = by_genre.get(genre, 0) + (m.watch_minutes or 0)
+        if m.platform:
+            by_platform[m.platform] = by_platform.get(m.platform, 0) + (m.watch_minutes or 0)
+
+    # remove zero watch time entries
+    by_genre = {k: v for k, v in by_genre.items() if v > 0}
+    by_platform = {k: v for k, v in by_platform.items() if v > 0}
+
     return {"by_genre": by_genre, "by_platform": by_platform}
 
 @router.get("/ai/recommendations")

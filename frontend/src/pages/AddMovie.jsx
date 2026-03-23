@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import api from '../api/axios'
+import Toast from '../components/Toast'
 import { useNavigate, useLocation } from 'react-router-dom'
 
 export default function AddMovie() {
@@ -15,6 +16,8 @@ export default function AddMovie() {
     const [seasonProgress, setSeasonProgress] = useState({}) // { "1": { watched: 5, total: 10 } }
     const [error, setError] = useState('')
     const [generatingReview, setGeneratingReview] = useState(false)
+    const [savedId, setSavedId] = useState(null)
+    const [toast, setToast] = useState('')
 
     const [form, setForm] = useState({
         title: '', director: '', genre: '', platform: '',
@@ -91,13 +94,24 @@ export default function AddMovie() {
     }
 
     const generateReview = async () => {
-        if (!editing?.id) return
+        if (!form.title) return setError('Please select a title from TMDB first')
+        if (!form.review.trim()) return setError('Write some rough notes first!')
         setGeneratingReview(true)
+        setError('')
         try {
-            const res = await api.post(`/movies/ai/review/${editing.id}`, { review: form.review.trim() })
+            let movieId = editing?.id || savedId
+            if (!movieId) {
+                const saved = await api.post('/movies/', form)
+                movieId = saved.data.id
+                setSavedId(movieId) // ← this was missing
+            } else {
+                await api.put(`/movies/${movieId}`, form)
+            }
+            const res = await api.post(`/movies/ai/review/${movieId}`, { review: form.review.trim() })
             setForm(f => ({ ...f, review: res.data.review }))
         } catch (e) {
-            setError(e.response?.data?.detail || 'Add some notes first, then generate!')
+            if (e.response?.status === 409) setError('"' + form.title + '" is already in your collection!')
+            else setError(e.response?.data?.detail || 'Something went wrong!')
         }
         setGeneratingReview(false)
     }
@@ -106,11 +120,19 @@ export default function AddMovie() {
         setError('')
         if (!form.title) return setError('Please select a title from TMDB first')
         try {
-            if (editing) await api.put(`/movies/${editing.id}`, form)
-            else await api.post('/movies/', form)
-            navigate('/')
+            if (editing) {
+                await api.put(`/movies/${editing.id}`, form)
+                setToast('Collection updated successfully!')
+            } else if (savedId) {
+                await api.put(`/movies/${savedId}`, form)
+                setToast('Added to collection!')
+            } else {
+                await api.post('/movies/', form)
+                setToast('Added to collection!')
+            }
+            setTimeout(() => navigate('/'), 1500)
         } catch (e) {
-            if (e.response?.status === 409) setError('This title is already in your collection!')
+            if (e.response?.status === 409) setError('"' + form.title + '" is already in your collection!')
             else setError('Something went wrong. Try again.')
         }
     }
@@ -187,7 +209,27 @@ export default function AddMovie() {
                     <div className="grid grid-cols-2 gap-4">
                         <div>
                             <label className={label}>Status</label>
-                            <select className={inp} value={form.status} onChange={e => setForm(f => ({ ...f, status: e.target.value }))}>
+                            <select className={inp} value={form.status} onChange={e => {
+                                const newStatus = e.target.value
+                                if (newStatus === 'completed') {
+                                    // for TV — set all episodes watched across all seasons
+                                    if (form.content_type === 'tv' && seasons.length > 0) {
+                                        const allWatched = {}
+                                        seasons.forEach(s => {
+                                            allWatched[s.season_number] = { watched: s.episode_count, total: s.episode_count }
+                                        })
+                                        setSeasonProgress(allWatched)
+                                    }
+                                    // for movie — set watch_minutes to full runtime
+                                    setForm(f => ({
+                                        ...f,
+                                        status: newStatus,
+                                        episodes_watched: f.total_episodes || f.episodes_watched,
+                                    }))
+                                } else {
+                                    setForm(f => ({ ...f, status: newStatus }))
+                                }
+                            }}>
                                 <option value="wishlist">Wishlist</option>
                                 <option value="watching">Watching</option>
                                 <option value="completed">Completed</option>
@@ -304,37 +346,33 @@ export default function AddMovie() {
                     )}
 
                     {/* Review */}
-                    {/* Review */}
                     <div>
                         <div className="flex items-center justify-between mb-1">
                             <label className={label}>Your Review / Notes</label>
-                            {editing && (
-                                <button onClick={generateReview} disabled={generatingReview}
-                                        className="text-xs px-3 py-1 rounded-lg bg-amber-400/10 hover:bg-amber-400/20 text-amber-400 disabled:opacity-50 cursor-pointer transition-colors flex items-center gap-1">
-                                    {generatingReview
-                                        ? <><span className="animate-spin inline-block">⟳</span> Generating...</>
-                                        : <>✨ AI Generate</>
-                                    }
-                                </button>
-                            )}
+                            <button onClick={generateReview} disabled={generatingReview}
+                                    className="text-xs px-3 py-1 rounded-lg bg-amber-400/10 hover:bg-amber-400/20 text-amber-400 disabled:opacity-50 cursor-pointer transition-colors flex items-center gap-1">
+                                {generatingReview
+                                    ? <><span className="animate-spin inline-block">⟳</span> Generating...</>
+                                    : <>✨ AI Generate</>
+                                }
+                            </button>
                         </div>
                         <textarea className={`${inp} h-24 resize-none`}
-                                  placeholder={editing ? "Write rough notes and hit AI Generate..." : "What did you think..."}
+                                  placeholder="Write rough notes and hit AI Generate..."
                                   value={form.review}
                                   onChange={e => setForm(f => ({ ...f, review: e.target.value }))} />
-                        {editing && (
-                            <p className="text-xs text-zinc-600 mt-1">Write rough notes → AI expands into a proper review</p>
-                        )}
+                        <p className="text-xs text-zinc-600 mt-1">Write rough notes → AI expands into a proper review</p>
                     </div>
 
                     {error && <p className="text-red-400 text-sm text-center">{error}</p>}
 
                     <button onClick={handleSubmit}
                             className="w-full bg-amber-400 hover:bg-amber-300 text-black font-medium py-3 rounded-lg transition-colors cursor-pointer text-sm tracking-wide">
-                        {editing ? 'Save Changes' : 'Add to Collection'}
+                        {editing ? 'Save Changes' : 'Updated Collection'}
                     </button>
                 </div>
             </div>
+            {toast && <Toast message={toast} onClose={() => setToast('')} />}
         </div>
     )
 }
