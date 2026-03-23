@@ -1,20 +1,20 @@
 import { useEffect, useState } from 'react'
 import api from '../api/axios'
 import MovieCard from '../components/MovieCard'
+import MovieModal from '../components/MovieModal'
 import { useNavigate } from 'react-router-dom'
 
 export default function Home() {
     const [movies, setMovies] = useState([])
-    const [allMovies, setAllMovies] = useState([]) // unfiltered, for genre list
+    const [allMovies, setAllMovies] = useState([])
     const [filters, setFilters] = useState({ genre: '', platform: '', status: '' })
+    const [selectedMovie, setSelectedMovie] = useState(null)
     const navigate = useNavigate()
 
-    // fetch all movies once for genre extraction
     useEffect(() => {
         api.get('/movies/').then(r => setAllMovies(r.data))
     }, [])
 
-    // fetch filtered movies
     const fetchMovies = async () => {
         const params = {}
         if (filters.genre) params.genre = filters.genre
@@ -26,25 +26,20 @@ export default function Home() {
 
     useEffect(() => { fetchMovies() }, [filters])
 
-    // extract unique genres from all movies
     const genres = [...new Set(
         allMovies.flatMap(m => m.genre ? m.genre.split(',').map(g => g.trim()) : [])
     )].filter(Boolean).sort()
 
-    const inputCls = "bg-[#0e1623] border border-white/10 text-zinc-200 text-sm rounded-lg px-3 py-2 outline-none focus:border-amber-400 transition-colors placeholder:text-zinc-600"
+    const inputCls = "bg-[#0e1623] border border-white/10 text-zinc-200 text-sm rounded-lg px-3 py-2 outline-none focus:border-amber-400 transition-colors"
 
     return (
         <div className="min-h-screen bg-[#080c14] px-8 py-8">
             <div className="flex flex-wrap items-center gap-3 mb-8">
                 <h2 className="text-3xl text-white mr-4" style={{ fontFamily: "'Bebas Neue', sans-serif" }}>My Collection</h2>
-
-                {/* Dynamic genre dropdown */}
                 <select className={inputCls} value={filters.genre} onChange={e => setFilters(f => ({ ...f, genre: e.target.value }))}>
                     <option value="">All Genres</option>
                     {genres.map(g => <option key={g} value={g}>{g}</option>)}
                 </select>
-
-                {/* Platform dropdown */}
                 <select className={inputCls} value={filters.platform} onChange={e => setFilters(f => ({ ...f, platform: e.target.value }))}>
                     <option value="">All Platforms</option>
                     <option value="Netflix">Netflix</option>
@@ -65,15 +60,12 @@ export default function Home() {
                     <option value="Theatre">Theatre</option>
                     <option value="Other">Other</option>
                 </select>
-
-                {/* Status dropdown */}
                 <select className={inputCls} value={filters.status} onChange={e => setFilters(f => ({ ...f, status: e.target.value }))}>
                     <option value="">All Status</option>
                     <option value="wishlist">Wishlist</option>
                     <option value="watching">Watching</option>
                     <option value="completed">Completed</option>
                 </select>
-
                 <span className="ml-auto text-zinc-500 text-sm">{movies.length} titles</span>
             </div>
 
@@ -90,10 +82,15 @@ export default function Home() {
                         <MovieCard key={m.id} movie={m}
                                    onDelete={id => setMovies(ms => ms.filter(m => m.id !== id))}
                                    onEdit={m => navigate('/add', { state: { movie: m } })}
+                                   onOpenModal={m => setSelectedMovie(m)}
                         />
                     ))}
                 </div>
             }
+
+            {selectedMovie && (
+                <MovieModal movie={selectedMovie} onClose={() => setSelectedMovie(null)} />
+            )}
         </div>
     )
 }

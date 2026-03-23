@@ -4,6 +4,10 @@ from database import get_db
 from models import Movie
 from schemas import MovieCreate, MovieUpdate, MovieOut
 from typing import List, Optional
+from groq import Groq
+import os, json
+from dotenv import load_dotenv
+load_dotenv()
 
 router = APIRouter(prefix="/movies", tags=["movies"])
 
@@ -52,3 +56,98 @@ def watch_time_stats(db: Session = Depends(get_db)):
         by_genre[m.genre] = by_genre.get(m.genre, 0) + (m.watch_minutes or 0)
         by_platform[m.platform] = by_platform.get(m.platform, 0) + (m.watch_minutes or 0)
     return {"by_genre": by_genre, "by_platform": by_platform}
+
+@router.get("/ai/recommendations")
+def get_recommendations(db: Session = Depends(get_db)):
+    movies = db.query(Movie).all()
+    if not movies:
+        return {"recommendations": []}
+
+    watched = [m for m in movies if m.status in ["completed", "watching"]]
+    if not watched:
+        return {"recommendations": []}
+
+    history = [{"title": m.title, "genre": m.genre, "rating": m.rating, "status": m.status} for m in watched]
+
+    client = Groq(api_key=os.getenv("GROQ_API_KEY"))
+    response = client.chat.completions.create(
+        model="llama-3.3-70b-versatile",
+        messages=[{
+            "role": "user",
+            "content": f"""Based on this user's watch history and ratings, recommend 5 movies or TV shows.
+
+Watch history: {json.dumps(history, indent=2)}
+
+Respond ONLY with a JSON array, no markdown, no backticks, no explanation:
+[
+  {{
+    "title": "Title",
+    "type": "movie or tv",
+    "genre": "Genre",
+    "reason": "One sentence why they'd like it",
+    "similarity": "Similar to X which they rated Y/10"
+  }}
+]"""
+        }],
+        temperature=0.7,
+        max_tokens=1024,
+    )
+
+    try:
+        text = response.choices[0].message.content.strip()
+        recs = json.loads(text)
+        # fetch poster for each recommendation from TMDB
+        from routes.tmdb import session as tmdb_session, BASE, TMDB_KEY
+        for rec in recs:
+            try:
+                kind = "tv" if rec.get("type") == "tv" else "movie"
+                res = tmdb_session.get(f"{BASE}/search/{kind}?api_key={TMDB_KEY}&query={rec['title']}", timeout=5, verify=False)
+                results = res.json().get("results", [])
+                if results and results[0].get("poster_path"):
+                    rec["poster_url"] = f"https://image.tmdb.org/t/p/w300{results[0]['poster_path']}"
+                    rec["overview"] = results[0].get("overview", "")
+                    rec["tmdb_id"] = str(results[0]["id"])
+                else:
+                    rec["poster_url"] = ""
+                    rec["overview"] = ""
+                    rec["tmdb_id"] = ""
+            except:
+                rec["poster_url"] = ""
+                rec["overview"] = ""
+                rec["tmdb_id"] = ""
+        return {"recommendations": recs}
+    except:
+        return {"recommendations": []}
+
+
+@router.post("/ai/review/{movie_id}")
+def generate_review(movie_id: int, db: Session = Depends(get_db)):
+    movie = db.query(Movie).filter(Movie.id == movie_id).first()
+    if not movie:
+        raise HTTPException(status_code=404, detail="Movie not found")
+    if not movie.review:
+        raise HTTPException(status_code=400, detail="Add some notes first")
+
+    client = Groq(api_key=os.getenv("GROQ_API_KEY"))
+    response = client.chat.completions.create(
+        model="llama-3.3-70b-versatile",
+        messages=[{
+            "role": "user",
+            "content": f"""You are a movie critic. Expand these rough notes into a short, engaging 3-4 sentence review.
+
+Movie: {movie.title}
+Genre: {movie.genre}
+User rating: {movie.rating}/10
+Rough notes: {movie.review}
+
+Write a natural, personal review in first person. Keep it concise and honest. No filler phrases. Just the review, nothing else."""
+        }],
+        temperature=0.8,
+        max_tokens=300,
+    )
+
+    generated = response.choices[0].message.content.strip()
+    movie.review = generated
+    db.commit()
+    db.refresh(movie)
+    return {"review": generated}
