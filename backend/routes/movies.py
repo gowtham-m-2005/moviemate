@@ -5,9 +5,13 @@ from models import Movie
 from schemas import MovieCreate, MovieUpdate, MovieOut
 from typing import List, Optional
 from groq import Groq
+from pydantic import BaseModel
 import os, json
 from dotenv import load_dotenv
 load_dotenv()
+
+class ReviewRequest(BaseModel):
+    review: Optional[str] = None
 
 router = APIRouter(prefix="/movies", tags=["movies"])
 
@@ -121,11 +125,15 @@ Respond ONLY with a JSON array, no markdown, no backticks, no explanation:
 
 
 @router.post("/ai/review/{movie_id}")
-def generate_review(movie_id: int, db: Session = Depends(get_db)):
+def generate_review(movie_id: int, body: ReviewRequest, db: Session = Depends(get_db)):
     movie = db.query(Movie).filter(Movie.id == movie_id).first()
     if not movie:
         raise HTTPException(status_code=404, detail="Movie not found")
-    if not movie.review:
+
+    # use notes from request body if provided, else fall back to DB
+    notes = (body.review if body and body.review else movie.review or "").strip()
+
+    if not notes:
         raise HTTPException(status_code=400, detail="Add some notes first")
 
     client = Groq(api_key=os.getenv("GROQ_API_KEY"))
@@ -138,7 +146,7 @@ def generate_review(movie_id: int, db: Session = Depends(get_db)):
 Movie: {movie.title}
 Genre: {movie.genre}
 User rating: {movie.rating}/10
-Rough notes: {movie.review}
+Rough notes: {notes}
 
 Write a natural, personal review in first person. Keep it concise and honest. No filler phrases. Just the review, nothing else."""
         }],

@@ -14,6 +14,7 @@ export default function AddMovie() {
     const [seasons, setSeasons] = useState([])
     const [seasonProgress, setSeasonProgress] = useState({}) // { "1": { watched: 5, total: 10 } }
     const [error, setError] = useState('')
+    const [generatingReview, setGeneratingReview] = useState(false)
 
     const [form, setForm] = useState({
         title: '', director: '', genre: '', platform: '',
@@ -87,6 +88,18 @@ export default function AddMovie() {
             ...prev,
             [seasonNum]: { watched, total: totalEps }
         }))
+    }
+
+    const generateReview = async () => {
+        if (!editing?.id) return
+        setGeneratingReview(true)
+        try {
+            const res = await api.post(`/movies/ai/review/${editing.id}`, { review: form.review.trim() })
+            setForm(f => ({ ...f, review: res.data.review }))
+        } catch (e) {
+            setError(e.response?.data?.detail || 'Add some notes first, then generate!')
+        }
+        setGeneratingReview(false)
     }
 
     const handleSubmit = async () => {
@@ -245,20 +258,6 @@ export default function AddMovie() {
                                         </button>
                                     )
                                 })}
-                                {/* All seasons button */}
-                                <button
-                                    onClick={() => {
-                                        setSelectedSeason({ season_number: -1, name: 'All Seasons' })
-                                        setForm(f => ({ ...f, total_episodes: seasons.reduce((a, s) => a + s.episode_count, 0), episodes_watched: 0 }))
-                                    }}
-                                    className={`text-xs py-2 px-3 rounded-lg border transition-all cursor-pointer text-left ${
-                                        selectedSeason?.season_number === -1
-                                            ? 'bg-amber-400 text-black border-amber-400 font-medium'
-                                            : 'bg-white/5 border-white/10 text-zinc-300 hover:bg-white/10'
-                                    }`}>
-                                    <div className="font-medium">All Seasons</div>
-                                    <div className="opacity-60 mt-0.5">{seasons.reduce((a, s) => a + s.episode_count, 0)} eps</div>
-                                </button>
                             </div>
                             {/* Slider — only for selected season */}
                             {selectedSeason && (() => {
@@ -305,10 +304,27 @@ export default function AddMovie() {
                     )}
 
                     {/* Review */}
+                    {/* Review */}
                     <div>
-                        <label className={label}>Your Review / Notes</label>
-                        <textarea className={`${inp} h-24 resize-none`} placeholder="What did you think..."
-                                  value={form.review} onChange={e => setForm(f => ({ ...f, review: e.target.value }))} />
+                        <div className="flex items-center justify-between mb-1">
+                            <label className={label}>Your Review / Notes</label>
+                            {editing && (
+                                <button onClick={generateReview} disabled={generatingReview}
+                                        className="text-xs px-3 py-1 rounded-lg bg-amber-400/10 hover:bg-amber-400/20 text-amber-400 disabled:opacity-50 cursor-pointer transition-colors flex items-center gap-1">
+                                    {generatingReview
+                                        ? <><span className="animate-spin inline-block">⟳</span> Generating...</>
+                                        : <>✨ AI Generate</>
+                                    }
+                                </button>
+                            )}
+                        </div>
+                        <textarea className={`${inp} h-24 resize-none`}
+                                  placeholder={editing ? "Write rough notes and hit AI Generate..." : "What did you think..."}
+                                  value={form.review}
+                                  onChange={e => setForm(f => ({ ...f, review: e.target.value }))} />
+                        {editing && (
+                            <p className="text-xs text-zinc-600 mt-1">Write rough notes → AI expands into a proper review</p>
+                        )}
                     </div>
 
                     {error && <p className="text-red-400 text-sm text-center">{error}</p>}
