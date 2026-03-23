@@ -2,6 +2,8 @@ import { useState, useEffect } from 'react'
 import api from '../api/axios'
 import Toast from '../components/Toast'
 import { useNavigate, useLocation } from 'react-router-dom'
+import { motion, AnimatePresence } from 'framer-motion'
+import { Search, Film, Star, Clock, Edit3, X, Check, ChevronLeft, Sparkles } from 'lucide-react'
 
 export default function AddMovie() {
     const navigate = useNavigate()
@@ -141,72 +143,170 @@ export default function AddMovie() {
     const label = "text-xs text-zinc-500 uppercase tracking-wider mb-1 block"
 
     return (
-        <div className="min-h-screen bg-[#080c14] px-8 py-8">
-            <div className="max-w-xl mx-auto">
-                <h2 className="text-3xl text-white mb-8" style={{ fontFamily: "'Bebas Neue', sans-serif" }}>
-                    {editing ? 'Edit Title' : 'Add New Title'}
-                </h2>
+        <div className="min-h-screen">
+            {/* Header */}
+            <motion.div
+                initial={{ opacity: 0, y: -20 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="mb-8"
+            >
+                <div className="flex items-center gap-4">
+                    <button
+                        onClick={() => navigate('/')}
+                        className="p-2 hover:bg-white/5 rounded-lg transition-colors text-zinc-400 hover:text-white"
+                    >
+                        <ChevronLeft className="w-5 h-5" />
+                    </button>
+                    <div className="flex items-center gap-3">
+                        <div className="p-3 bg-amber-400/10 rounded-xl">
+                            <Film className="w-6 h-6 text-amber-400" />
+                        </div>
+                        <div>
+                            <h1 className="text-3xl text-white font-bold" style={{ fontFamily: "'Bebas Neue', sans-serif" }}>
+                                {editing ? 'Edit Title' : 'Add New Title'}
+                            </h1>
+                            <p className="text-zinc-400 text-sm mt-1">
+                                {editing ? 'Update your movie/show details' : 'Search and add to your collection'}
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </motion.div>
+
+            <div className="max-w-4xl mx-auto">
 
                 {/* TMDB Search */}
                 {!editing && (
-                    <div className="mb-6 p-4 bg-[#0e1623] rounded-xl border border-white/5">
-                        <p className={label}>Search TMDB to autofill</p>
-                        <div className="flex gap-2">
-                            <input className={inp} placeholder="Search movies or shows..."
-                                   value={query} onChange={e => setQuery(e.target.value)}
-                                   onKeyDown={e => e.key === 'Enter' && searchTMDB()} />
-                            <select className={`${inp} w-28`} value={form.content_type}
-                                    onChange={e => { setForm(f => ({ ...f, content_type: e.target.value })); setSeasons([]); setSeasonProgress({}) }}>
-                                <option value="movie">Movie</option>
-                                <option value="tv">TV</option>
-                            </select>
-                            <button onClick={searchTMDB}
-                                    className="bg-amber-400 hover:bg-amber-300 text-black text-sm font-medium px-4 rounded-lg transition-colors cursor-pointer whitespace-nowrap">
-                                Search
-                            </button>
-                        </div>
-                        {results.length > 0 && (
-                            <div className="mt-3 flex flex-col gap-1 max-h-64 overflow-y-auto">
-                                {results.map(r => (
-                                    <div key={r.tmdb_id} onClick={() => fillFromTMDB(r)}
-                                         className="flex items-center gap-3 p-2 rounded-lg hover:bg-white/5 cursor-pointer transition-colors">
-                                        {r.poster_url
-                                            ? <img src={r.poster_url} className="w-8 h-12 object-cover rounded flex-shrink-0" alt="" />
-                                            : <div className="w-8 h-12 bg-zinc-800 rounded flex-shrink-0" />
-                                        }
-                                        <div>
-                                            <p className="text-sm text-zinc-200">{r.title}</p>
-                                            <p className="text-xs text-zinc-500">{r.genre}</p>
-                                        </div>
-                                    </div>
-                                ))}
-                            </div>
-                        )}
-                    </div>
-                )}
-
-                {/* Autofilled preview */}
-                {tmdbFilled && (
-                    <div className="mb-6 flex gap-4 p-4 bg-[#0e1623] rounded-xl border border-amber-400/20">
-                        {form.poster_url && <img src={form.poster_url} className="w-16 rounded-lg object-cover flex-shrink-0" alt="" />}
-                        <div className="flex flex-col gap-1">
-                            <p className="text-white font-medium">{form.title}</p>
-                            {form.director && <p className="text-xs text-zinc-400">🎬 {form.director}</p>}
-                            {form.genre && <p className="text-xs text-zinc-400">🎭 {form.genre}</p>}
-                            {form.total_episodes > 0 && <p className="text-xs text-zinc-400">📺 {form.total_episodes} episodes total</p>}
-                            {!editing && (
-                                <button onClick={() => { setTmdbFilled(false); setSeasons([]); setSeasonProgress({}); setForm(f => ({ ...f, title: '', director: '', genre: '', poster_url: '', tmdb_id: '', total_episodes: 0 })) }}
-                                        className="text-xs text-red-400 hover:text-red-300 text-left mt-1 cursor-pointer">
-                                    ✕ Clear
+                    <motion.div
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        className="mb-6"
+                    >
+                        <div className="bg-[#0e1623] rounded-xl border border-white/5 p-6">
+                            <label className={label}>Search TMDB to autofill</label>
+                            <div className="flex gap-3 mt-2">
+                                <div className="relative flex-1">
+                                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-500 pointer-events-none z-10" />
+                                    <input
+                                        type="text"
+                                        className="w-full bg-[#0e1623] border border-white/10 text-zinc-200 text-sm rounded-lg px-3 py-2.5 pl-10 outline-none focus:border-amber-400 transition-colors placeholder:text-zinc-600"
+                                        placeholder="Search movies or shows..."
+                                        value={query}
+                                        onChange={e => setQuery(e.target.value)}
+                                        onKeyDown={e => e.key === 'Enter' && searchTMDB()}
+                                        disabled={false}
+                                        autoComplete="off"
+                                    />
+                                </div>
+                                <select className="w-24 bg-[#0e1623] border border-white/10 text-zinc-200 text-sm rounded-lg px-3 py-2.5 outline-none focus:border-amber-400 transition-colors flex-shrink-0" value={form.content_type}
+                                        onChange={e => { setForm(f => ({ ...f, content_type: e.target.value })); setSeasons([]); setSeasonProgress({}) }}>
+                                    <option value="movie">Movie</option>
+                                    <option value="tv">TV Show</option>
+                                </select>
+                                <button
+                                    onClick={searchTMDB}
+                                    className="px-6 py-2.5 bg-amber-400 hover:bg-amber-300 text-black font-medium rounded-lg flex items-center gap-2 flex-shrink-0"
+                                >
+                                    <Search className="w-4 h-4" />
+                                    Search
                                 </button>
-                            )}
+                            </div>
+
+                            <AnimatePresence>
+                                {results.length > 0 && (
+                                    <motion.div
+                                        initial={{ opacity: 0, height: 0 }}
+                                        animate={{ opacity: 1, height: 'auto' }}
+                                        exit={{ opacity: 0, height: 0 }}
+                                        className="mt-4 space-y-2 max-h-64 overflow-y-auto"
+                                    >
+                                        {results.map(r => (
+                                            <motion.div
+                                                key={r.tmdb_id}
+                                                initial={{ opacity: 0, x: -20 }}
+                                                animate={{ opacity: 1, x: 0 }}
+                                                onClick={() => fillFromTMDB(r)}
+                                                className="flex items-center gap-3 p-3 rounded-lg hover:bg-white/5 cursor-pointer transition-colors"
+                                            >
+                                                {r.poster_url ? (
+                                                    <img src={r.poster_url} className="w-12 h-16 object-cover rounded flex-shrink-0" alt="" />
+                                                ) : (
+                                                    <div className="w-12 h-16 bg-zinc-800 rounded flex-shrink-0 flex items-center justify-center">
+                                                        <Film className="w-6 h-6 text-zinc-600" />
+                                                    </div>
+                                                )}
+                                                <div className="flex-1">
+                                                    <p className="text-sm text-zinc-200 font-medium">{r.title}</p>
+                                                    <p className="text-xs text-zinc-500">{r.genre}</p>
+                                                </div>
+                                            </motion.div>
+                                        ))}
+                                    </motion.div>
+                                )}
+                            </AnimatePresence>
                         </div>
-                    </div>
+                    </motion.div>
                 )}
 
-                <div className="flex flex-col gap-4">
+                {/* Autofilled Preview */}
+                <AnimatePresence>
+                    {tmdbFilled && (
+                        <motion.div
+                            initial={{ opacity: 0, y: 20 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            exit={{ opacity: 0, y: -20 }}
+                            className="mb-6"
+                        >
+                            <div className="bg-gradient-to-r from-amber-400/10 to-orange-400/10 rounded-xl border border-amber-400/20 p-6">
+                                <div className="flex gap-4">
+                                    {form.poster_url && (
+                                        <img src={form.poster_url} className="w-20 h-28 rounded-lg object-cover flex-shrink-0" alt="" />
+                                    )}
+                                    <div className="flex-1">
+                                        <h3 className="text-xl font-bold text-white mb-2">{form.title}</h3>
+                                        <div className="space-y-1">
+                                            {form.director && (
+                                                <p className="text-sm text-zinc-300 flex items-center gap-2">
+                                                    <Film className="w-4 h-4" />
+                                                    {form.director}
+                                                </p>
+                                            )}
+                                            {form.genre && (
+                                                <p className="text-sm text-zinc-300">
+                                                    🎭 {form.genre}
+                                                </p>
+                                            )}
+                                            {form.total_episodes > 0 && (
+                                                <p className="text-sm text-zinc-300">
+                                                    📺 {form.total_episodes} episodes total
+                                                </p>
+                                            )}
+                                        </div>
+                                        {!editing && (
+                                            <button
+                                                onClick={() => { setTmdbFilled(false); setSeasons([]); setSeasonProgress({}); setForm(f => ({ ...f, title: '', director: '', genre: '', poster_url: '', tmdb_id: '', total_episodes: 0 })) }}
+                                                className="mt-3 text-xs text-red-400 hover:text-red-300 flex items-center gap-1 cursor-pointer"
+                                            >
+                                                <X className="w-3 h-3" />
+                                                Clear selection
+                                            </button>
+                                        )}
+                                    </div>
+                                </div>
+                            </div>
+                        </motion.div>
+                    )}
+                </AnimatePresence>
+
+                {/* Form Fields */}
+                <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.2 }}
+                    className="space-y-6"
+                >
                     {/* Status + Platform */}
-                    <div className="grid grid-cols-2 gap-4">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div>
                             <label className={label}>Status</label>
                             <select className={inp} value={form.status} onChange={e => {
@@ -230,9 +330,9 @@ export default function AddMovie() {
                                     setForm(f => ({ ...f, status: newStatus }))
                                 }
                             }}>
-                                <option value="wishlist">Wishlist</option>
-                                <option value="watching">Watching</option>
-                                <option value="completed">Completed</option>
+                                <option value="wishlist">📝 Wishlist</option>
+                                <option value="watching">👀 Watching</option>
+                                <option value="completed">✅ Completed</option>
                             </select>
                         </div>
                         <div>
@@ -263,11 +363,22 @@ export default function AddMovie() {
                     {/* Rating */}
                     <div>
                         <label className={label}>Your Rating (0–10)</label>
-                        <div className="flex items-center gap-3">
-                            <input type="range" min="0" max="10" step="0.5" value={form.rating}
-                                   onChange={e => setForm(f => ({ ...f, rating: +e.target.value }))}
-                                   className="flex-1 accent-amber-400 cursor-pointer" />
-                            <span className="text-amber-400 font-medium w-8 text-right">{form.rating}</span>
+                        <div className="flex items-center gap-4">
+                            <div className="flex-1">
+                                <input
+                                    type="range"
+                                    min="0"
+                                    max="10"
+                                    step="0.5"
+                                    value={form.rating}
+                                    onChange={e => setForm(f => ({ ...f, rating: +e.target.value }))}
+                                    className="w-full accent-amber-400 cursor-pointer"
+                                />
+                            </div>
+                            <div className="flex items-center gap-2 bg-[#0e1623] px-3 py-2 rounded-lg border border-white/10">
+                                <Star className="w-4 h-4 text-amber-400" />
+                                <span className="text-amber-400 font-bold text-lg w-8">{form.rating}</span>
+                            </div>
                         </div>
                     </div>
 
@@ -347,31 +458,63 @@ export default function AddMovie() {
 
                     {/* Review */}
                     <div>
-                        <div className="flex items-center justify-between mb-1">
+                        <div className="flex items-center justify-between mb-2">
                             <label className={label}>Your Review / Notes</label>
-                            <button onClick={generateReview} disabled={generatingReview}
-                                    className="text-xs px-3 py-1 rounded-lg bg-amber-400/10 hover:bg-amber-400/20 text-amber-400 disabled:opacity-50 cursor-pointer transition-colors flex items-center gap-1">
-                                {generatingReview
-                                    ? <><span className="animate-spin inline-block">⟳</span> Generating...</>
-                                    : <>✨ AI Generate</>
-                                }
+                            <button
+                                onClick={generateReview}
+                                disabled={generatingReview}
+                                className="px-3 py-1.5 rounded-lg bg-amber-400/10 hover:bg-amber-400/20 text-amber-400 disabled:opacity-50 cursor-pointer transition-colors flex items-center gap-2 text-sm font-medium"
+                            >
+                                {generatingReview ? (
+                                    <>
+                                        <div className="w-3 h-3 border-2 border-amber-400 border-t-transparent rounded-full animate-spin" />
+                                        Generating...
+                                    </>
+                                ) : (
+                                    <>
+                                        <Sparkles className="w-3 h-3" />
+                                        AI Generate
+                                    </>
+                                )}
                             </button>
                         </div>
-                        <textarea className={`${inp} h-24 resize-none`}
-                                  placeholder="Write rough notes and hit AI Generate..."
-                                  value={form.review}
-                                  onChange={e => setForm(f => ({ ...f, review: e.target.value }))} />
-                        <p className="text-xs text-zinc-600 mt-1">Write rough notes → AI expands into a proper review</p>
+                        <textarea
+                            className={`${inp} h-32 resize-none`}
+                            placeholder="Write rough notes and hit AI Generate..."
+                            value={form.review}
+                            onChange={e => setForm(f => ({ ...f, review: e.target.value }))}
+                        />
+                        <p className="text-xs text-zinc-600 mt-2 flex items-center gap-1">
+                            <Sparkles className="w-3 h-3" />
+                            Write rough notes → AI expands into a proper review
+                        </p>
                     </div>
 
-                    {error && <p className="text-red-400 text-sm text-center">{error}</p>}
+                    {/* Error Message */}
+                    <AnimatePresence>
+                        {error && (
+                            <motion.div
+                                initial={{ opacity: 0, y: -10 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                exit={{ opacity: 0, y: -10 }}
+                                className="p-4 bg-red-500/10 border border-red-500/20 rounded-lg text-red-400 text-sm text-center"
+                            >
+                                {error}
+                            </motion.div>
+                        )}
+                    </AnimatePresence>
 
-                    <button onClick={handleSubmit}
-                            className="w-full bg-amber-400 hover:bg-amber-300 text-black font-medium py-3 rounded-lg transition-colors cursor-pointer text-sm tracking-wide">
-                        {editing ? 'Save Changes' : 'Updated Collection'}
+                    {/* Submit Button */}
+                    <button
+                        onClick={handleSubmit}
+                        className="w-full py-4 bg-amber-400 hover:bg-amber-300 text-black font-bold rounded-lg flex items-center justify-center gap-2 text-lg"
+                    >
+                        <Check className="w-5 h-5" />
+                        {editing ? 'Save Changes' : 'Add to Collection'}
                     </button>
-                </div>
+                </motion.div>
             </div>
+
             {toast && <Toast message={toast} onClose={() => setToast('')} />}
         </div>
     )
