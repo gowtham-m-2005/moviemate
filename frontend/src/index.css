@@ -6,6 +6,18 @@
 ::-webkit-scrollbar-thumb { background: rgba(251,191,36,0.3); border-radius: 4px; }
 ::-webkit-scrollbar-thumb:hover { background: rgba(251,191,36,0.5); }
 
+/* Better touch handling for mobile */
+input[type="text"], input[type="email"], input[type="password"], textarea, select {
+    -webkit-appearance: none;
+    -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
+}
+
+input[type="text"]:focus, input[type="email"]:focus, input[type="password"]:focus, textarea:focus, select:focus {
+    -webkit-appearance: none;
+    outline: none;
+}
+
 @keyframes bounce-in {
     0% { transform: scale(0.3); opacity: 0; }
     50% { transform: scale(1.05); }

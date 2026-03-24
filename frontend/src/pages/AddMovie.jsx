@@ -182,33 +182,34 @@ export default function AddMovie() {
                         animate={{ opacity: 1, y: 0 }}
                         className="mb-6"
                     >
-                        <div className="bg-[#0e1623] rounded-xl border border-white/5 p-6">
+                        <div className="bg-[#0e1623] rounded-xl border border-white/5 p-4 sm:p-6">
                             <label className={label}>Search TMDB to autofill</label>
-                            <div className="flex gap-3 mt-2">
-                                <div className="relative flex-1">
+                            <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 mt-2">
+                                <div className="relative flex-1 w-full">
                                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-500 pointer-events-none z-10" />
                                     <input
                                         type="text"
-                                        className="w-full bg-[#0e1623] border border-white/10 text-zinc-200 text-sm rounded-lg px-3 py-2.5 pl-10 outline-none focus:border-amber-400 transition-colors placeholder:text-zinc-600"
+                                        className="w-full bg-[#0e1623] border border-white/10 text-zinc-200 text-sm rounded-lg px-3 py-2.5 pl-10 outline-none focus:border-amber-400 transition-colors placeholder:text-zinc-600 touch-manipulation"
                                         placeholder="Search movies or shows..."
                                         value={query}
                                         onChange={e => setQuery(e.target.value)}
                                         onKeyDown={e => e.key === 'Enter' && searchTMDB()}
                                         disabled={false}
                                         autoComplete="off"
+                                        autoFocus={!editing}
                                     />
                                 </div>
-                                <select className="w-24 bg-[#0e1623] border border-white/10 text-zinc-200 text-sm rounded-lg px-3 py-2.5 outline-none focus:border-amber-400 transition-colors flex-shrink-0" value={form.content_type}
+                                <select className="w-full sm:w-24 bg-[#0e1623] border border-white/10 text-zinc-200 text-sm rounded-lg px-3 py-2.5 outline-none focus:border-amber-400 transition-colors flex-shrink-0" value={form.content_type}
                                         onChange={e => { setForm(f => ({ ...f, content_type: e.target.value })); setSeasons([]); setSeasonProgress({}) }}>
                                     <option value="movie">Movie</option>
                                     <option value="tv">TV Show</option>
                                 </select>
                                 <button
                                     onClick={searchTMDB}
-                                    className="px-6 py-2.5 bg-amber-400 hover:bg-amber-300 text-black font-medium rounded-lg flex items-center gap-2 flex-shrink-0"
+                                    className="w-full sm:w-auto px-4 sm:px-6 py-2.5 bg-amber-400 hover:bg-amber-300 text-black font-medium rounded-lg flex items-center justify-center gap-2 flex-shrink-0"
                                 >
                                     <Search className="w-4 h-4" />
-                                    Search
+                                    <span className="hidden sm:inline">Search</span>
                                 </button>
                             </div>
 
