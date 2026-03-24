@@ -1,8 +1,8 @@
 import { BrowserRouter, Routes, Route } from 'react-router-dom'
-import Navbar from './components/Navbar'
-import Home from './pages/Home'
-import AddMovie from './pages/AddMovie'
-import Stats from './pages/Stats'
+import Navbar from './components/Navbar.jsx'
+import Home from './pages/Home.jsx'
+import AddMovie from './pages/AddMovie.jsx'
+import Stats from './pages/Stats.jsx'
 
 export default function App() {
   return (

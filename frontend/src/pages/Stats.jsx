@@ -1,8 +1,8 @@
 import { useEffect, useState } from 'react'
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell, PieChart, Pie } from 'recharts'
 import api from '../api/axios'
-import MovieModal from '../components/MovieModal'
-import Toast from '../components/Toast'
+import MovieModal from '../components/MovieModal.jsx'
+import Toast from '../components/Toast.jsx'
 import { motion, AnimatePresence } from 'framer-motion'
 import { BarChart3, Clock, TrendingUp, Users, Star, Play, Sparkles, RefreshCw } from 'lucide-react'
 
