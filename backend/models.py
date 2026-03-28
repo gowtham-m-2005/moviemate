@@ -20,3 +20,4 @@ class Movie(Base):
     tmdb_id = Column(String, default="")
     watch_minutes = Column(Integer, default=0)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
+    last_synced_at = Column(DateTime(timezone=True), nullable=True)  # Backend-only: TMDB data last updated
