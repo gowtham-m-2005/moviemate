@@ -1,6 +1,7 @@
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { X, Star, Clock, Film, Play, Plus, Calendar, User } from 'lucide-react'
+import { X, Star, Clock, Film, Play, Plus, Calendar, User, Brain, Loader2 } from 'lucide-react'
+import api from '../api/axios'
 
 const STATUS = {
     watching: { label: 'Watching', color: 'bg-amber-500/20 text-amber-400 border border-amber-500/30' },
@@ -9,11 +10,36 @@ const STATUS = {
 }
 
 export default function MovieModal({ movie, onClose, isRecommendation = false, onAddToWatching }) {
+    const [analysis, setAnalysis] = useState('')
+    const [analysisLoading, setAnalysisLoading] = useState(false)
+    const [analysisError, setAnalysisError] = useState('')
+    const [showAnalysis, setShowAnalysis] = useState(false)
+
     useEffect(() => {
         const handler = e => { if (e.key === 'Escape') onClose() }
         document.addEventListener('keydown', handler)
         return () => document.removeEventListener('keydown', handler)
     }, [])
+
+    const handleAnalyze = async () => {
+        if (analysis && !analysisError) {
+            setShowAnalysis(true)
+            return
+        }
+
+        try {
+            setAnalysisLoading(true)
+            setAnalysisError('')
+            const response = await api.post(`/movies/ai/analyze/${movie.id}`)
+            setAnalysis(response.data.analysis)
+            setShowAnalysis(true)
+        } catch (err) {
+            setAnalysisError('Failed to load analysis. Please try again.')
+            console.error('Analysis error:', err)
+        } finally {
+            setAnalysisLoading(false)
+        }
+    }
 
     if (!movie) return null
     const s = STATUS[movie.status] || STATUS.wishlist
@@ -227,6 +253,81 @@ export default function MovieModal({ movie, onClose, isRecommendation = false, o
                                         </p>
                                     )}
                                 </div>
+                            )}
+
+                            {/* AI Analysis Button */}
+                            {!isRecommendation && (
+                                <motion.button
+                                    whileHover={{ scale: 1.02 }}
+                                    whileTap={{ scale: 0.98 }}
+                                    onClick={handleAnalyze}
+                                    disabled={analysisLoading}
+                                    className="w-full bg-gradient-to-r from-purple-500 to-blue-500 hover:from-purple-600 hover:to-blue-600 disabled:from-zinc-600 disabled:to-zinc-700 text-white font-bold py-3 rounded-xl flex items-center justify-center gap-3 disabled:cursor-not-allowed transition-all"
+                                >
+                                    {analysisLoading ? (
+                                        <>
+                                            <motion.div
+                                                animate={{ rotate: 360 }}
+                                                transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
+                                            >
+                                                <Loader2 className="w-5 h-5" />
+                                            </motion.div>
+                                            Analyzing with AI...
+                                        </>
+                                    ) : (
+                                        <>
+                                            <Brain className="w-5 h-5" />
+                                            {analysis ? 'View AI Analysis' : 'Generate AI Analysis'}
+                                        </>
+                                    )}
+                                </motion.button>
+                            )}
+
+                            {/* AI Analysis Section */}
+                            {showAnalysis && !isRecommendation && (
+                                <motion.div
+                                    initial={{ opacity: 0, y: 20 }}
+                                    animate={{ opacity: 1, y: 0 }}
+                                    className="bg-gradient-to-br from-purple-500/10 to-blue-500/10 rounded-xl p-6 border border-purple-500/20"
+                                >
+                                    <div className="flex items-center justify-between mb-4">
+                                        <h4 className="text-lg font-medium text-purple-400 flex items-center gap-2">
+                                            <Brain className="w-5 h-5" />
+                                            AI Analysis
+                                        </h4>
+                                        <button 
+                                            onClick={() => setShowAnalysis(false)}
+                                            className="text-zinc-500 hover:text-zinc-300 text-sm"
+                                        >
+                                            Hide
+                                        </button>
+                                    </div>
+                                    
+                                    {analysisError ? (
+                                        <div className="text-center py-4">
+                                            <p className="text-red-400 mb-3">{analysisError}</p>
+                                            <button 
+                                                onClick={handleAnalyze}
+                                                className="px-4 py-2 bg-red-500/20 hover:bg-red-500/30 text-red-400 rounded-lg text-sm"
+                                            >
+                                                Try Again
+                                            </button>
+                                        </div>
+                                    ) : (
+                                        <div 
+                                            className="text-zinc-300 leading-relaxed whitespace-pre-line"
+                                            dangerouslySetInnerHTML={{
+                                                __html: analysis.replace(/\*\*(.*?)\*\*/g, '<strong class="text-purple-300">$1</strong>')
+                                            }}
+                                        />
+                                    )}
+                                    
+                                    <div className="mt-4 text-center">
+                                        <p className="text-xs text-zinc-600 italic">
+                                            Powered by AI • Analysis based on movie metadata and user reviews
+                                        </p>
+                                    </div>
+                                </motion.div>
                             )}
 
                             {/* Action Button */}
