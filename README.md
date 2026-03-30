@@ -36,28 +36,6 @@ A full-stack app to track and manage your personal movie and TV show collection 
 
 ---
 
-## 🐳 Docker Setup (Recommended)
-
-```bash
-# Clone and navigate to project
-git clone https://github.com/gowtham-m-2005/moviemate
-cd moviemate
-
-# Create .env file with your API keys
-cp .env.example .env
-# Edit .env with your keys
-
-# Start everything with Docker Compose
-docker-compose up --build
-```
-
-The app will be available at:
-- Frontend: http://localhost:3000
-- Backend API: http://localhost:8000
-- API Docs: http://localhost:8000/docs
-
----
-
 ## 🚀 Setup
 
 ### Prerequisites
@@ -110,6 +88,20 @@ Create `frontend/.env`:
 ```
 VITE_API_URL=http://localhost:8000
 ```
+
+---
+
+## 🐳 Docker Setup
+
+```bash
+# Start everything with Docker Compose
+docker-compose up --build
+```
+
+The app will be available at:
+- Frontend: http://localhost:3000
+- Backend API: http://localhost:8000
+- API Docs: http://localhost:8000/docs
 
 ---
 
