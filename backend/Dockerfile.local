@@ -1,15 +1,20 @@
 # BUILDER STAGE
 FROM python:3.11-slim as builder
 WORKDIR /app
-COPY requirements.txt .
-RUN pip install --user --no-cache-dir -r requirements.txt
+RUN pip install uv
+COPY pyproject.toml uv.lock ./
+RUN uv sync --frozen
 
 # RUNTIME STAGE
 from python:3.11-slim as runtime
 RUN apt-get update && apt-get install -y curl && rm -rf /var/lib/apt/lists/*
+RUN pip install uv
 WORKDIR /app
-COPY --from=builder /root/.local /root/.local
+COPY pyproject.toml uv.lock ./
+COPY --from=builder /app/.venv /app/.venv
 COPY . .
-ENV PATH=/root/.local/bin:$PATH
+
+ENV PATH="/app/.venv/bin:$PATH"
+ENV UV_PROJECT_ENVIRONMENT=/root/.local
 EXPOSE 8000
-CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]
+CMD ["uv", "run", "uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]
