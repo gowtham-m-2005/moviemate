@@ -1,6 +1,7 @@
 from pydantic import BaseModel
 from typing import Optional
 
+
 class MovieCreate(BaseModel):
     title: str
     director: Optional[str] = ""
@@ -17,10 +18,13 @@ class MovieCreate(BaseModel):
     tmdb_id: Optional[str] = ""
     watch_minutes: Optional[int] = 0
 
+
 class MovieUpdate(MovieCreate):
     pass
 
+
 class MovieOut(MovieCreate):
     id: int
+
     class Config:
         from_attributes = True
