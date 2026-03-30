@@ -9,6 +9,10 @@ from pydantic import BaseModel
 import os
 import json
 from dotenv import load_dotenv
+from langchain_groq import ChatGroq
+from langchain.schema import StrOutputParser
+from langchain.prompts import ChatPromptTemplate
+
 
 load_dotenv()
 
@@ -163,6 +167,44 @@ Respond ONLY with a JSON array, no markdown, no backticks, no explanation:
         return {"recommendations": recs}
     except:
         return {"recommendations": []}
+
+
+@router.post("/ai/analyze/{movie_id}")
+def analyze_movie(movie_id: int, db: Session = Depends(get_db)):
+    movie = db.query(Movie).filter(Movie.id == movie_id).first()
+    if not movie:
+        raise HTTPException(status_code=404, detail="Movie not found")
+
+    # LangChain implementation
+    client = ChatGroq(api_key=os.getenv("GROQ_API_KEY"), model="llama-3.3-70b-versatile")
+    
+    prompt = ChatPromptTemplate.from_template(
+        """Analyze this movie in detail:
+
+Title: {title}
+Genre: {genre} 
+User Rating: {rating}/10
+User Review: {review}
+
+Provide analysis on:
+1. Themes and symbolism
+2. Character development
+3. Cinematography style
+4. Pacing and structure
+5. What makes it unique
+
+Keep each point concise (2-3 sentences)."""
+    )
+    
+    chain = prompt | client | StrOutputParser()
+    analysis = chain.invoke({
+        "title": movie.title,
+        "genre": movie.genre or "Unknown",
+        "rating": movie.rating or 0,
+        "review": movie.review or "No review available"
+    })
+    
+    return {"analysis": analysis}
 
 
 @router.post("/ai/review/{movie_id}")
