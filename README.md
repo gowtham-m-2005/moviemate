@@ -27,17 +27,43 @@ A full-stack app to track and manage your personal movie and TV show collection 
 |---|---|
 | Frontend | React 19, Vite, Tailwind CSS, Framer Motion |
 | Backend | FastAPI, SQLAlchemy, PostgreSQL |
+| Package Management | uv (modern Python package manager) |
+| Database Migrations | Alembic |
+| Containerization | Docker & Docker Compose |
 | AI | Groq API (Llama 3.3 70B) |
 | External API | TMDB API |
 | Deployment | Vercel + Railway |
 
 ---
 
+## 🐳 Docker Setup (Recommended)
+
+```bash
+# Clone and navigate to project
+git clone https://github.com/gowtham-m-2005/moviemate
+cd moviemate
+
+# Create .env file with your API keys
+cp .env.example .env
+# Edit .env with your keys
+
+# Start everything with Docker Compose
+docker-compose up --build
+```
+
+The app will be available at:
+- Frontend: http://localhost:3000
+- Backend API: http://localhost:8000
+- API Docs: http://localhost:8000/docs
+
+---
+
 ## 🚀 Setup
 
 ### Prerequisites
-- Python 3.8+
+- Python 3.14+
 - Node.js 16+
+- uv (Python package manager) → [install uv](https://docs.astral.sh/uv/getting-started/installation/)
 - PostgreSQL
 - TMDB API key → [themoviedb.org](https://www.themoviedb.org/settings/api)
 - Groq API key → [console.groq.com](https://console.groq.com)
@@ -45,9 +71,7 @@ A full-stack app to track and manage your personal movie and TV show collection 
 ### Backend
 ```bash
 cd backend
-python -m venv venv
-source venv/bin/activate  # Windows: venv\Scripts\activate
-pip install -r requirements.txt
+uv sync
 ```
 
 Create `backend/.env`:
@@ -63,9 +87,14 @@ Create the database:
 psql -U postgres -c "CREATE DATABASE moviemate;"
 ```
 
+Run database migrations:
+```bash
+alembic upgrade head
+```
+
 Run the server:
 ```bash
-python -m uvicorn main:app --reload
+uv run uvicorn main:app --reload
 ```
 
 API docs available at `http://localhost:8000/docs`
@@ -80,6 +109,23 @@ npm run dev
 Create `frontend/.env`:
 ```
 VITE_API_URL=http://localhost:8000
+```
+
+---
+
+## 🔄 Database Migrations
+
+The project uses Alembic for database schema management.
+
+```bash
+# Generate new migration
+alembic revision --autogenerate -m "description"
+
+# Apply migrations
+alembic upgrade head
+
+# Rollback migration
+alembic downgrade -1
 ```
 
 ---
@@ -127,15 +173,24 @@ VITE_API_URL=http://localhost:8000
 ```
 moviemate/
 ├── backend/
+│   ├── alembic/              # Database migrations
+│   │   ├── versions/
+│   │   ├── env.py
+│   │   └── script.py.mako
+│   ├── alembic.ini
+│   ├── Dockerfile.local
+│   ├── pyproject.toml        # uv package configuration
+│   ├── uv.lock              # Dependency lock file
 │   ├── main.py
 │   ├── models.py
 │   ├── schemas.py
 │   ├── database.py
-│   ├── requirements.txt
 │   ├── Procfile
 │   └── routes/
 │       ├── movies.py
 │       └── tmdb.py
+├── docker-compose.yml        # Docker orchestration
+├── .dockerignore
 └── frontend/
     └── src/
         ├── api/
